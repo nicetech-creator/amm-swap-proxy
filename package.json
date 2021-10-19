@@ -1,0 +1,8 @@
+{
+  "name": "amm-swap-proxy",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/nicetech-creator/amm-swap-proxy.git",
+  "author": "sergitvalavadze",
+  "license": "MIT"
+}
