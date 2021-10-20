@@ -4,5 +4,10 @@
   "main": "index.js",
   "repository": "https://github.com/nicetech-creator/amm-swap-proxy.git",
   "author": "sergitvalavadze",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@truffle/hdwallet-provider": "1.2.3",
+    "dotenv": "^10.0.0",
+    "truffle-plugin-verify": "^0.5.15"
+  }
 }
