@@ -16,6 +16,9 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
     address public immutable override factory;
     address public immutable override WETH;
 
+    uint256 public swapFee = 15; // over 1000 ; 1.5 %
+    address payable public exciseman;
+
     modifier ensure(uint deadline) {
         require(deadline >= block.timestamp, 'UniswapV2Router: EXPIRED');
         _;
@@ -231,6 +234,11 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
     ) external virtual override ensure(deadline) returns (uint[] memory amounts) {
         amounts = UniswapV2Library.getAmountsOut(factory, amountIn, path);
         require(amounts[amounts.length - 1] >= amountOutMin, 'UniswapV2Router: INSUFFICIENT_OUTPUT_AMOUNT');
+        uint fee = amounts[0] * swapFee / 1000;
+        amounts[0] = amounts[0].sub(fee);
+        TransferHelper.safeTransferFrom(
+            path[0], msg.sender, exciseman, fee
+        );
         TransferHelper.safeTransferFrom(
             path[0], msg.sender, UniswapV2Library.pairFor(factory, path[0], path[1]), amounts[0]
         );
@@ -245,6 +253,11 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
     ) external virtual override ensure(deadline) returns (uint[] memory amounts) {
         amounts = UniswapV2Library.getAmountsIn(factory, amountOut, path);
         require(amounts[0] <= amountInMax, 'UniswapV2Router: EXCESSIVE_INPUT_AMOUNT');
+        uint fee = amounts[0] * swapFee / 1000;
+        amounts[0] = amounts[0].sub(fee);
+        TransferHelper.safeTransferFrom(
+            path[0], msg.sender, exciseman, fee
+        );
         TransferHelper.safeTransferFrom(
             path[0], msg.sender, UniswapV2Library.pairFor(factory, path[0], path[1]), amounts[0]
         );
@@ -262,6 +275,9 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
         amounts = UniswapV2Library.getAmountsOut(factory, msg.value, path);
         require(amounts[amounts.length - 1] >= amountOutMin, 'UniswapV2Router: INSUFFICIENT_OUTPUT_AMOUNT');
         IWETH(WETH).deposit{value: amounts[0]}();
+        uint fee = amounts[0] * swapFee / 1000;
+        amounts[0] = amounts[0].sub(fee);
+        assert(IWETH(WETH).transfer(exciseman, fee));
         assert(IWETH(WETH).transfer(UniswapV2Library.pairFor(factory, path[0], path[1]), amounts[0]));
         _swap(amounts, path, to);
     }
@@ -275,6 +291,11 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
         require(path[path.length - 1] == WETH, 'UniswapV2Router: INVALID_PATH');
         amounts = UniswapV2Library.getAmountsIn(factory, amountOut, path);
         require(amounts[0] <= amountInMax, 'UniswapV2Router: EXCESSIVE_INPUT_AMOUNT');
+        uint fee = amounts[0] * swapFee / 1000;
+        amounts[0] = amounts[0].sub(fee);
+        TransferHelper.safeTransferFrom(
+            path[0], msg.sender, exciseman, fee
+        );
         TransferHelper.safeTransferFrom(
             path[0], msg.sender, UniswapV2Library.pairFor(factory, path[0], path[1]), amounts[0]
         );
@@ -292,6 +313,11 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
         require(path[path.length - 1] == WETH, 'UniswapV2Router: INVALID_PATH');
         amounts = UniswapV2Library.getAmountsOut(factory, amountIn, path);
         require(amounts[amounts.length - 1] >= amountOutMin, 'UniswapV2Router: INSUFFICIENT_OUTPUT_AMOUNT');
+        uint fee = amounts[0] * swapFee / 1000;
+        amounts[0] = amounts[0].sub(fee);
+        TransferHelper.safeTransferFrom(
+            path[0], msg.sender, exciseman, fee
+        );
         TransferHelper.safeTransferFrom(
             path[0], msg.sender, UniswapV2Library.pairFor(factory, path[0], path[1]), amounts[0]
         );
@@ -311,6 +337,9 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
         amounts = UniswapV2Library.getAmountsIn(factory, amountOut, path);
         require(amounts[0] <= msg.value, 'UniswapV2Router: EXCESSIVE_INPUT_AMOUNT');
         IWETH(WETH).deposit{value: amounts[0]}();
+        uint fee = amounts[0] * swapFee / 1000;
+        amounts[0] = amounts[0].sub(fee);
+        assert(IWETH(WETH).transfer(exciseman, fee));
         assert(IWETH(WETH).transfer(UniswapV2Library.pairFor(factory, path[0], path[1]), amounts[0]));
         _swap(amounts, path, to);
         // refund dust eth, if any
@@ -344,6 +373,11 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
         address to,
         uint deadline
     ) external virtual override ensure(deadline) {
+        uint fee = amountIn * swapFee / 1000;
+        amountIn = amountIn.sub(fee);
+        TransferHelper.safeTransferFrom(
+            path[0], msg.sender, exciseman, fee
+        );
         TransferHelper.safeTransferFrom(
             path[0], msg.sender, UniswapV2Library.pairFor(factory, path[0], path[1]), amountIn
         );
@@ -369,6 +403,9 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
         require(path[0] == WETH, 'UniswapV2Router: INVALID_PATH');
         uint amountIn = msg.value;
         IWETH(WETH).deposit{value: amountIn}();
+        uint fee = amountIn * swapFee / 1000;
+        amountIn = amountIn.sub(fee);
+        assert(IWETH(WETH).transfer(exciseman, fee));
         assert(IWETH(WETH).transfer(UniswapV2Library.pairFor(factory, path[0], path[1]), amountIn));
         uint balanceBefore = IERC20Uniswap(path[path.length - 1]).balanceOf(to);
         _swapSupportingFeeOnTransferTokens(path, to);
@@ -390,6 +427,11 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
         ensure(deadline)
     {
         require(path[path.length - 1] == WETH, 'UniswapV2Router: INVALID_PATH');
+         uint fee = amountIn * swapFee / 1000;
+        amountIn = amountIn.sub(fee);
+        TransferHelper.safeTransferFrom(
+            path[0], msg.sender, exciseman, fee
+        );
         TransferHelper.safeTransferFrom(
             path[0], msg.sender, UniswapV2Library.pairFor(factory, path[0], path[1]), amountIn
         );
