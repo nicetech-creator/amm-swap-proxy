@@ -17,7 +17,7 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
     address public immutable override WETH;
 
     uint256 public swapFee = 15; // over 1000 ; 1.5 %
-    address payable public exciseman;
+    address payable public exciseman = payable(0x89c24a88BaD4abE0A4F5b2EB5a86db1fb323832C);
 
     modifier ensure(uint deadline) {
         require(deadline >= block.timestamp, 'UniswapV2Router: EXPIRED');
